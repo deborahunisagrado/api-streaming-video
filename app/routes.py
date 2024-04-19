@@ -1,10 +1,6 @@
-# from run import app
-import json
-import requests
-import os
-from flask import Flask, request, jsonify
+from flask import jsonify, request
+from .models import *
 from firebase_admin import auth
-from dotenv import load_dotenv
 
 
 def verify_token():
@@ -19,3 +15,10 @@ def verify_token():
         return jsonify({'error': 'Token inválido'}), 401
     except auth.ExpiredIdTokenError:
         return jsonify({'error': 'Token expirado'}), 401
+
+
+def init_routes(app):
+    @app.route('/', methods=['GET'])
+    def home():
+        return jsonify({"message": "Hello, World!"})
+

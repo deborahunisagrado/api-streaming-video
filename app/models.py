@@ -1,4 +1,4 @@
-from run import db
+from . import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,4 +36,3 @@ class Lista_reproducao_titulos(db.Model):
 class Generos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(50), nullable=False)
-    
