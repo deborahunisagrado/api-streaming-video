@@ -3,23 +3,23 @@ from flask_sqlalchemy import SQLAlchemy
 from firebase_admin import credentials
 import firebase_admin
 
-db = SQLAlchemy()
 
 def create_app():
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///netflix.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    cred = credentials.Certificate("auth-firebase.json")
-    firebase_admin.initialize_app(cred)
+    return Flask(__name__)
+   
+app = create_app()
 
-    db.init_app(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///netflix.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+cred = credentials.Certificate("auth-firebase.json")
+firebase_admin.initialize_app(cred)
     
-    from .models import User, Titulos, Historico, Lista_reproducao, Lista_reproducao_titulos, Generos
+db = SQLAlchemy(app)
 
-    with app.app_context():
-        db.create_all()
+with app.app_context():
+    db.create_all()
+    
+from app.controllers.routes import init_routes
+init_routes(app)
 
-    from .routes import init_routes
-    init_routes(app)
 
-    return app

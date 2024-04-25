@@ -4,54 +4,49 @@ from dotenv import load_dotenv
 import json
 import requests
 import os
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-from .__init__ import db
+from datetime import date
+
 
 app = Flask(__name__)
-from .models import User, Titulos, Historico, Lista_reproducao, Lista_reproducao_titulos, Generos
+from app.models.models import User, Titulos, Historico, Lista_reproducao, Lista_reproducao_titulos, Generos
 
 load_dotenv()
+def verify_token():
+    id_token = request.headers.get('Authorization')
+    if not id_token:
+        return jsonify({'error': 'Token não fornecido'}), 401
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        request.uid = decoded_token['uid']
+    except auth.InvalidIdTokenError:
+        return jsonify({'error': 'Token inválido'}), 401
+    except auth.ExpiredIdTokenError:
+        return jsonify({'error': 'Token expirado'}), 401
+    
 def init_routes(app):   
-    def verify_token():
-        id_token = request.headers.get('Authorization')
-        if not id_token:
-            return jsonify({'error': 'Token não fornecido'}), 401
-
-        try:
-            decoded_token = auth.verify_id_token(id_token)
-            request.uid = decoded_token['uid']
-        except auth.InvalidIdTokenError:
-            return jsonify({'error': 'Token inválido'}), 401
-        except auth.ExpiredIdTokenError:
-            return jsonify({'error': 'Token expirado'}), 401
-
     @app.before_request
     def before_request_func():
         if request.endpoint not in ['login', 'signup']:
             return verify_token()
 
     @app.route('/signup', methods=['POST'])
-    def create_user():
+    def signup():
         data = request.get_json()
         email = data['email']
         password = data['password']
         name = data['name']
 
-        # Criar usuário no Firebase
         try:
             user_record = auth.create_user(email=email, password=password)
             firebase_uid = user_record.uid
         except Exception as e:
             return jsonify({"error": str(e)}), 400
 
-        # Criar usuário no banco de dados local
         try:
-            new_user = User(email=email, name=name, firebase_uid=firebase_uid)
-            db.session.add(new_user)
-            db.session.commit()
+            new_user = User(email=email, name=name, data_criacao=str(date.today()))
+            new_user.save()
         except Exception as e:
-            # Em caso de falha, exclui o usuário do Firebase para manter a consistência
             auth.delete_user(firebase_uid)
             return jsonify({"error": str(e)}), 400
 
@@ -63,7 +58,7 @@ def init_routes(app):
         email = request.json['email']
         password = request.json['password']
 
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={os.getenv('AIzaSyANTLIZjKK3_Y78CaQYQeMiwFT8jqYdrds')}"
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={os.getenv('FIREBASE_API_KEY')}"
 
         payload = json.dumps({
             "email": email,
@@ -110,8 +105,7 @@ def init_routes(app):
             ava_media=data['ava_media'],
             data_criacao=datetime.now()
         )
-        db.session.add(novo_titulo)
-        db.session.commit()
+        novo_titulo.save()
         return jsonify({"message": "Título criado com sucesso"}), 201
 
     @app.route('/titulos', methods=['GET'])
@@ -136,8 +130,7 @@ def init_routes(app):
             id_titulo=data['id_titulo'],
             data_criacao=datetime.now()
         )
-        db.session.add(novo_historico)
-        db.session.commit()
+        novo_historico.save()
         return jsonify({"message": "Histórico registrado com sucesso"}), 201
 
     @app.route('/listas', methods=['POST'])
@@ -148,8 +141,7 @@ def init_routes(app):
             nome=data['nome'],
             descricao=data['descricao']
         )
-        db.session.add(nova_lista)
-        db.session.commit()
+        nova_lista.save()
         return jsonify({"message": "Lista de reprodução criada com sucesso"}), 201
 
     @app.route('/listas/<int:id_lista>/titulos', methods=['POST'])
@@ -159,15 +151,13 @@ def init_routes(app):
             id_lista=id_lista,
             id_titulo=data['id_titulo']
         )
-        db.session.add(nova_assoc)
-        db.session.commit()
+        nova_assoc.save()
         return jsonify({"message": "Título adicionado à lista com sucesso"}), 201
 
     @app.route('/generos', methods=['POST'])
     def criar_genero():
         data = request.get_json()
         novo_genero = Generos(nome=data['nome'])
-        db.session.add(novo_genero)
-        db.session.commit()
+        novo_genero.save()
         return jsonify({"message": "Gênero criado com sucesso"}), 201
 
