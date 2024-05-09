@@ -4,7 +4,10 @@ from dotenv import load_dotenv
 import json
 import requests
 import os
-from datetime import date
+import datetime
+from datetime import datetime
+
+
 
 
 app = Flask(__name__)
@@ -27,11 +30,12 @@ def verify_token():
 def init_routes(app):   
     @app.before_request
     def before_request_func():
-        if request.endpoint not in ['login', 'signup']:
+        if request.endpoint not in ['login', 'signup', 'get_usuario']:
             return verify_token()
 
     @app.route('/signup', methods=['POST'])
     def signup():
+        data_hoje = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         data = request.get_json()
         email = data['email']
         password = data['password']
@@ -44,7 +48,7 @@ def init_routes(app):
             return jsonify({"error": str(e)}), 400
 
         try:
-            new_user = User(email=email, name=name, data_criacao=str(date.today()))
+            new_user = User(name=name, email=email)
             new_user.save()
         except Exception as e:
             auth.delete_user(firebase_uid)

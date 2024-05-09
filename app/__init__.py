@@ -16,6 +16,8 @@ firebase_admin.initialize_app(cred)
     
 db = SQLAlchemy(app)
 
+from app.models.models import User, Titulos, Historico, Lista_reproducao, Lista_reproducao_titulos, Generos
+
 with app.app_context():
     db.create_all()
     

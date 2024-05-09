@@ -1,10 +1,11 @@
 from app import db
+import datetime
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)
-    data_criacao = db.Column(db.DateTime, nullable=False)
+    data_criacao = db.Column(db.DateTime, default=datetime.datetime.now)
     
     def save(self):
         db.session.add(self)
